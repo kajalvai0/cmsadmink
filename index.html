@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ganjoy CMS - Content Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .editor-content {
+            min-height: 300px;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            outline: none;
+        }
+        .editor-content:focus {
+            border-color: #3b82f6;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .draggable-item {
+            cursor: move;
+            transition: all 0.2s ease;
+        }
+        .draggable-item:hover {
+            background-color: #f8fafc;
+        }
+        .sortable-ghost {
+            opacity: 0.5;
+            background: #c7d2fe;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .preview-container {
+            border: 2px dashed #e2e8f0;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .component-palette {
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .component-item {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .component-item:hover {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        .component-settings {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .tab-button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .tab-button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .image-upload-preview {
+            width: 100%;
+            height: 200px;
+            background-color: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .image-upload-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .image-upload-preview input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="bg-indigo-800 text-white w-64 h-full fixed transition-all duration-300 z-20 shadow-lg">
+            <div class="flex items-center justify-between p-4 border-b border-indigo-700">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-leaf text-2xl text-indigo-300"></i>
+                    <span class="text-xl font-bold">Ganjoy CMS</span>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <nav class="mt-6">
+                    <div class="mb-6">
+                        <p class="text-indigo-300 uppercase text-xs font-semibold px-3 mb-2">Content</p>
+                        <a href="#" class="flex items-center space-x-3 py-2 px-3 rounded-md bg-indigo-900 text-white mb-1">
+                            <i class="fas fa-home text-indigo-300"></i>
+                            <span>Homepage</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 px-3 rounded-md hover:bg-indigo-700 text-white mb-1 transition-colors">
+                            <i class="fas fa-utensils text-indigo-300"></i>
+                            <span>Products</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 px-3 rounded-md hover:bg-indigo-700 text-white mb-1 transition-colors">
+                            <i class="fas fa-book text-indigo-300"></i>
+                            <span>Recipes</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 px-3 rounded-md hover:bg-indigo-700 text-white mb-1 transition-colors">
+                            <i class="fas fa-images text-indigo-300"></i>
+                            <span>Gallery</span>
+                        </a>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <p class="text-indigo-300 uppercase text-xs font-semibold px-3 mb-2">Settings</p>
+                        <a href="#" class="flex items-center space-x-3 py-2 px-3 rounded-md hover:bg-indigo-700 text-white mb-1 transition-colors">
+                            <i class="fas fa-globe text-indigo-300"></i>
+                            <span>Site Settings</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 px-3 rounded-md hover:bg-indigo-700 text-white mb-1 transition-colors">
+                            <i class="fas fa-palette text-indigo-300"></i>
+                            <span>Theme</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 px-3 rounded-md hover:bg-indigo-700 text-white mb-1 transition-colors">
+                            <i class="fas fa-users text-indigo-300"></i>
+                            <span>Team</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            
+            <div class="absolute bottom-0 w-full p-4 border-t border-indigo-700">
+                <div class="flex items-center space-x-3">
+                    <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="User" class="w-8 h-8 rounded-full">
+                    <div>
+                        <p class="text-sm font-medium">Admin User</p>
+                        <p class="text-xs text-indigo-300">Super Admin</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden ml-64">
+            <!-- Top Navigation -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between px-6 py-3">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-xl font-semibold text-gray-800">Editing: Homepage</h1>
+                        <div class="flex items-center space-x-2 text-sm">
+                            <span class="text-gray-500">Last saved:</span>
+                            <span class="font-medium" id="last-saved">Just now</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <button id="preview-btn" class="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-md transition-colors">
+                            <i class="fas fa-eye text-gray-600"></i>
+                            <span>Preview</span>
+                        </button>
+                        <button id="save-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors flex items-center space-x-2">
+                            <i class="fas fa-save"></i>
+                            <span>Publish</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Editor Area -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Content Editor -->
+                <div class="flex-1 overflow-y-auto p-6">
+                    <div class="max-w-6xl mx-auto">
+                        <!-- Hero Section Editor -->
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-medium">Hero Section</h2>
+                                <button class="text-red-500 hover:text-red-700 text-sm flex items-center">
+                                    <i class="fas fa-trash-alt mr-1"></i> Remove
+                                </button>
+                            </div>
+                            <div class="preview-container">
+                                <div class="relative bg-green-100 rounded-lg overflow-hidden">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-green-600 to-green-400 opacity-75"></div>
+                                    <div class="relative px-6 py-16 sm:py-24 lg:px-8 lg:py-32">
+                                        <div class="mx-auto max-w-2xl text-center">
+                                            <h2 id="hero-title" class="text-4xl font-bold tracking-tight text-white sm:text-5xl editor-content" contenteditable="true">
+                                                Organic & Natural Food Products
+                                            </h2>
+                                            <p id="hero-subtitle" class="mt-6 text-lg leading-8 text-green-100 editor-content" contenteditable="true">
+                                                Discover our range of healthy, sustainable and delicious food options for your family.
+                                            </p>
+                                            <div class="mt-10 flex items-center justify-center gap-x-6">
+                                                <a href="#" id="hero-cta1" class="editor-content rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-green-600 shadow-sm hover:bg-green-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" contenteditable="true">
+                                                    Shop Now
+                                                </a>
+                                                <a href="#" id="hero-cta2" class="editor-content text-sm font-semibold leading-6 text-white" contenteditable="true">
+                                                    Learn more <span aria-hidden="true">→</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="component-settings mt-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Background Image</label>
+                                        <div class="image-upload-preview">
+                                            <img id="hero-bg-preview" src="" alt="Preview" class="hidden">
+                                            <span id="hero-bg-placeholder" class="text-gray-500">Click to upload image</span>
+                                            <input type="file" id="hero-bg-upload" accept="image/*" class="image-upload">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+                                        <select id="hero-bg-color" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="bg-green-600">Green</option>
+                                            <option value="bg-blue-600">Blue</option>
+                                            <option value="bg-yellow-600">Yellow</option>
+                                            <option value="bg-red-600">Red</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Featured Products Editor -->
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-medium">Featured Products</h2>
+                                <button class="text-red-500 hover:text-red-700 text-sm flex items-center">
+                                    <i class="fas fa-trash-alt mr-1"></i> Remove
+                                </button>
+                            </div>
+                            <div class="preview-container">
+                                <div class="bg-white py-12">
+                                    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+                                        <div class="text-center">
+                                            <h2 id="featured-title" class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl editor-content" contenteditable="true">
+                                                Our Featured Products
+                                            </h2>
+                                            <p id="featured-subtitle" class="mt-4 text-lg leading-8 text-gray-600 editor-content" contenteditable="true">
+                                                Carefully selected organic products for your healthy lifestyle
+                                            </p>
+                                        </div>
+                                        
+                                        <div id="product-list" class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                            <!-- Product 1 -->
+                                            <div class="draggable-item group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 rounded-lg border border-gray-200">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <span class="rounded-lg inline-flex p-3 bg-green-50 text-green-700 ring-4 ring-white">
+                                                            <i class="fas fa-leaf text-xl"></i>
+                                                        </span>
+                                                    </div>
+                                                    <button class="text-gray-400 hover:text-gray-500">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="mt-8">
+                                                    <h3 id="product1-title" class="text-lg font-medium editor-content" contenteditable="true">
+                                                        Organic Honey
+                                                    </h3>
+                                                    <p id="product1-desc" class="mt-2 text-sm text-gray-500 editor-content" contenteditable="true">
+                                                        Pure, raw honey from local beekeepers. No additives or processing.
+                                                    </p>
+                                                </div>
+                                                <span class="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400">
+                                                    <i class="fas fa-arrows-alt"></i>
+                                                </span>
+                                            </div>
+                                            
+                                            <!-- Product 2 -->
+                                            <div class="draggable-item group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 rounded-lg border border-gray-200">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <span class="rounded-lg inline-flex p-3 bg-green-50 text-green-700 ring-4 ring-white">
+                                                            <i class="fas fa-seedling text-xl"></i>
+                                                        </span>
+                                                    </div>
+                                                    <button class="text-gray-400 hover:text-gray-500">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="mt-8">
+                                                    <h3 id="product2-title" class="text-lg font-medium editor-content" contenteditable="true">
+                                                        Fresh Vegetables
+                                                    </h3>
+                                                    <p id="product2-desc" class="mt-2 text-sm text-gray-500 editor-content" contenteditable="true">
+                                                        Locally grown organic vegetables, harvested at peak freshness.
+                                                    </p>
+                                                </div>
+                                                <span class="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400">
+                                                    <i class="fas fa-arrows-alt"></i>
+                                                </span>
+                                            </div>
+                                            
+                                            <!-- Product 3 -->
+                                            <div class="draggable-item group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 rounded-lg border border-gray-200">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <span class="rounded-lg inline-flex p-3 bg-green-50 text-green-700 ring-4 ring-white">
+                                                            <i class="fas fa-wheat-awn text-xl"></i>
+                                                        </span>
+                                                    </div>
+                                                    <button class="text-gray-400 hover:text-gray-500">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="mt-8">
+                                                    <h3 id="product3-title" class="text-lg font-medium editor-content" contenteditable="true">
+                                                        Whole Grains
+                                                    </h3>
+                                                    <p id="product3-desc" class="mt-2 text-sm text-gray-500 editor-content" contenteditable="true">
+                                                        Nutrient-rich whole grains for baking and cooking.
+                                                    </p>
+                                                </div>
+                                                <span class="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400">
+                                                    <i class="fas fa-arrows-alt"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="component-settings mt-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-medium">Product Settings</h3>
+                                    <button id="add-product-btn" class="text-indigo-600 hover:text-indigo-800 text-sm flex items-center">
+                                        <i class="fas fa-plus-circle mr-1"></i> Add Product
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Layout</label>
+                                        <select id="product-layout" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="grid-cols-3">3 Columns</option>
+                                            <option value="grid-cols-2">2 Columns</option>
+                                            <option value="grid-cols-4">4 Columns</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Card Style</label>
+                                        <select id="product-card-style" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="border">Bordered</option>
+                                            <option value="shadow">Shadow</option>
+                                            <option value="flat">Flat</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Color Scheme</label>
+                                        <select id="product-color-scheme" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="green">Green</option>
+                                            <option value="blue">Blue</option>
+                                            <option value="yellow">Yellow</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Testimonials Editor -->
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-medium">Testimonials</h2>
+                                <button class="text-red-500 hover:text-red-700 text-sm flex items-center">
+                                    <i class="fas fa-trash-alt mr-1"></i> Remove
+                                </button>
+                            </div>
+                            <div class="preview-container">
+                                <div class="bg-white py-12">
+                                    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+                                        <div class="text-center">
+                                            <h2 id="testimonials-title" class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl editor-content" contenteditable="true">
+                                                What Our Customers Say
+                                            </h2>
+                                            <p id="testimonials-subtitle" class="mt-4 text-lg leading-8 text-gray-600 editor-content" contenteditable="true">
+                                                Don't just take our word for it - hear from our satisfied customers
+                                            </p>
+                                        </div>
+                                        <div class="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-2">
+                                            <!-- Testimonial 1 -->
+                                            <div class="draggable-item bg-white p-8 rounded-lg border border-gray-200">
+                                                <div class="flex items-start">
+                                                    <div class="flex-shrink-0">
+                                                        <img class="h-12 w-12 rounded-full" src="https://randomuser.me/api/portraits/women/32.jpg" alt="Testimonial">
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="flex items-center">
+                                                            <div class="flex items-center">
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                            </div>
+                                                            <button class="ml-auto text-gray-400 hover:text-gray-500">
+                                                                <i class="fas fa-ellipsis-v"></i>
+                                                            </button>
+                                                        </div>
+                                                        <p id="testimonial1-text" class="mt-2 text-gray-600 editor-content" contenteditable="true">
+                                                            "The quality of the organic vegetables is outstanding. I can really taste the difference compared to supermarket produce."
+                                                        </p>
+                                                        <p id="testimonial1-author" class="mt-4 font-medium text-gray-900 editor-content" contenteditable="true">
+                                                            Sarah Johnson
+                                                        </p>
+                                                        <p id="testimonial1-role" class="text-sm text-gray-500 editor-content" contenteditable="true">
+                                                            Health Coach
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Testimonial 2 -->
+                                            <div class="draggable-item bg-white p-8 rounded-lg border border-gray-200">
+                                                <div class="flex items-start">
+                                                    <div class="flex-shrink-0">
+                                                        <img class="h-12 w-12 rounded-full" src="https://randomuser.me/api/portraits/men/45.jpg" alt="Testimonial">
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="flex items-center">
+                                                            <div class="flex items-center">
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                                <i class="fas fa-star text-yellow-400"></i>
+                                                            </div>
+                                                            <button class="ml-auto text-gray-400 hover:text-gray-500">
+                                                                <i class="fas fa-ellipsis-v"></i>
+                                                            </button>
+                                                        </div>
+                                                        <p id="testimonial2-text" class="mt-2 text-gray-600 editor-content" contenteditable="true">
+                                                            "I've been buying the whole grains for my bakery and my customers love the flavor and texture they provide."
+                                                        </p>
+                                                        <p id="testimonial2-author" class="mt-4 font-medium text-gray-900 editor-content" contenteditable="true">
+                                                            Michael Chen
+                                                        </p>
+                                                        <p id="testimonial2-role" class="text-sm text-gray-500 editor-content" contenteditable="true">
+                                                            Baker & Café Owner
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="component-settings mt-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="font-medium">Testimonial Settings</h3>
+                                    <button id="add-testimonial-btn" class="text-indigo-600 hover:text-indigo-800 text-sm flex items-center">
+                                        <i class="fas fa-plus-circle mr-1"></i> Add Testimonial
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Layout</label>
+                                        <select id="testimonial-layout" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="grid-cols-2">2 Columns</option>
+                                            <option value="grid-cols-1">1 Column</option>
+                                            <option value="grid-cols-3">3 Columns</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Background</label>
+                                        <select id="testimonial-bg" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="bg-white">White</option>
+                                            <option value="bg-gray-50">Light Gray</option>
+                                            <option value="bg-green-50">Light Green</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sidebar Components -->
+                <div class="w-80 border-l border-gray-200 bg-white overflow-y-auto">
+                    <div class="p-6">
+                        <h2 class="text-lg font-medium mb-6">Add Components</h2>
+                        
+                        <div class="component-palette mb-6">
+                            <div class="flex space-x-2 mb-4">
+                                <button class="tab-button active" data-tab="components">Components</button>
+                                <button class="tab-button" data-tab="sections">Sections</button>
+                                <button class="tab-button" data-tab="media">Media</button>
+                            </div>
+                            
+                            <div id="components-tab" class="tab-content">
+                                <div class="component-item" draggable="true" data-type="text">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-font text-indigo-500 mr-2"></i>
+                                        <span>Text Block</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="image">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-image text-indigo-500 mr-2"></i>
+                                        <span>Image</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="button">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-square text-indigo-500 mr-2"></i>
+                                        <span>Button</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="heading">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-heading text-indigo-500 mr-2"></i>
+                                        <span>Heading</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="divider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-minus text-indigo-500 mr-2"></i>
+                                        <span>Divider</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="sections-tab" class="tab-content hidden">
+                                <div class="component-item" draggable="true" data-type="hero">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-star text-indigo-500 mr-2"></i>
+                                        <span>Hero Section</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="features">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-th-large text-indigo-500 mr-2"></i>
+                                        <span>Features Grid</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="testimonials">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-quote-left text-indigo-500 mr-2"></i>
+                                        <span>Testimonials</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="cta">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-bullhorn text-indigo-500 mr-2"></i>
+                                        <span>Call to Action</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="products">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-shopping-bag text-indigo-500 mr-2"></i>
+                                        <span>Products Grid</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="media-tab" class="tab-content hidden">
+                                <div class="component-item" draggable="true" data-type="gallery">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-images text-indigo-500 mr-2"></i>
+                                        <span>Image Gallery</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="video">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-video text-indigo-500 mr-2"></i>
+                                        <span>Video Embed</span>
+                                    </div>
+                                </div>
+                                <div class="component-item" draggable="true" data-type="slider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-sliders-h text-indigo-500 mr-2"></i>
+                                        <span>Image Slider</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="component-settings">
+                            <h3 class="font-medium mb-4">Page Settings</h3>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Page Title</label>
+                                <input type="text" value="Home" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">SEO Title</label>
+                                <input type="text" value="Ganjoy - Organic & Natural Food Products" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
+                                <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">Discover our range of healthy, sustainable and delicious organic food products for your family.</textarea>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Favicon</label>
+                                <div class="image-upload-preview" style="height: 100px;">
+                                    <img id="favicon-preview" src="" alt="Preview" class="hidden">
+                                    <span id="favicon-placeholder" class="text-gray-500">Click to upload favicon</span>
+                                    <input type="file" id="favicon-upload" accept="image/*" class="image-upload">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle mr-2"></i>
+        <span id="toast-message">Changes saved successfully!</span>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('[data-tab]').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Update active tab
+                document.querySelectorAll('[data-tab]').forEach(t => {
+                    t.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Show corresponding content
+                const tabId = this.getAttribute('data-tab') + '-tab';
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(tabId).classList.remove('hidden');
+            });
+        });
+
+        // Save button with toast notification
+        document.getElementById('save-btn').addEventListener('click', function() {
+            const toast = document.getElementById('toast');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('last-saved').textContent = `${timeString} today`;
+            document.getElementById('toast-message').textContent = 'Page published successfully!';
+            
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+            
+            // Here you would typically save the content to your backend
+            // For GitHub Pages, we'll use localStorage as a simple solution
+            saveToLocalStorage();
+        });
+
+        // Preview button
+        document.getElementById('preview-btn').addEventListener('click', function() {
+            // Save current content
+            saveToLocalStorage();
+            
+            // Open preview in new tab
+            window.open('preview.html', '_blank');
+        });
+
+        // Image upload handling
+        document.querySelectorAll('.image-upload').forEach(upload => {
+            upload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const previewId = this.id.replace('upload', 'preview');
+                        const placeholderId = this.id.replace('upload', 'placeholder');
+                        
+                        document.getElementById(previewId).src = event.target.result;
+                        document.getElementById(previewId).classList.remove('hidden');
+                        document.getElementById(placeholderId).classList.add('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        // Draggable components
+        document.querySelectorAll('.draggable-item').forEach(item => {
+            item.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('text/plain', this.id);
+                setTimeout(() => {
+                    this.classList.add('opacity-50');
+                }, 0);
+            });
+            
+            item.addEventListener('dragend', function() {
+                this.classList.remove('opacity-50');
+            });
+        });
+
+        // Drop zones for components
+        document.querySelectorAll('.preview-container').forEach(zone => {
+            zone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('bg-blue-50', 'border-blue-200');
+            });
+            
+            zone.addEventListener('dragleave', function() {
+                this.classList.remove('bg-blue-50', 'border-blue-200');
+            });
+            
+            zone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('bg-blue-50', 'border-blue-200');
+                
+                const componentId = e.dataTransfer.getData('text/plain');
+                const component = document.getElementById(componentId);
+                
+                if (component) {
+                    // Here you would implement the logic to add the component
+                    // For now, we'll just show a toast
+                    showToast('Component added');
+                }
+            });
+        });
+
+        // Add new product
+        document.getElementById('add-product-btn').addEventListener('click', function() {
+            const productList = document.getElementById('product-list');
+            const newProduct = document.createElement('div');
+            const productCount = productList.children.length + 1;
+            
+            newProduct.className = 'draggable-item group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 rounded-lg border border-gray-200';
+            newProduct.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="rounded-lg inline-flex p-3 bg-green-50 text-green-700 ring-4 ring-white">
+                            <i class="fas fa-leaf text-xl"></i>
+                        </span>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-500">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+                <div class="mt-8">
+                    <h3 class="text-lg font-medium editor-content" contenteditable="true">
+                        New Product ${productCount}
+                    </h3>
+                    <p class="mt-2 text-sm text-gray-500 editor-content" contenteditable="true">
+                        Description for new product
+                    </p>
+                </div>
+                <span class="pointer-events-none absolute top-6 right-6 text-gray-300 group-hover:text-gray-400">
+                    <i class="fas fa-arrows-alt"></i>
+                </span>
+            `;
+            
+            productList.appendChild(newProduct);
+            showToast('Product added');
+        });
+
+        // Add new testimonial
+        document.getElementById('add-testimonial-btn').addEventListener('click', function() {
+            const testimonialList = document.querySelector('#testimonials .preview-container .grid');
+            const testimonialCount = testimonialList.children.length + 1;
+            
+            const newTestimonial = document.createElement('div');
+            newTestimonial.className = 'draggable-item bg-white p-8 rounded-lg border border-gray-200';
+            newTestimonial.innerHTML = `
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <img class="h-12 w-12 rounded-full" src="https://randomuser.me/api/portraits/${testimonialCount % 2 === 0 ? 'men' : 'women'}/${Math.floor(Math.random() * 50)}.jpg" alt="Testimonial">
+                    </div>
+                    <div class="ml-4">
+                        <div class="flex items-center">
+                            <div class="flex items-center">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <i class="fas fa-star text-yellow-400"></i>
+                            </div>
+                            <button class="ml-auto text-gray-400 hover:text-gray-500">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                        <p class="mt-2 text-gray-600 editor-content" contenteditable="true">
+                            "This is a new testimonial about your products or services."
+                        </p>
+                        <p class="mt-4 font-medium text-gray-900 editor-content" contenteditable="true">
+                            New Customer ${testimonialCount}
+                        </p>
+                        <p class="text-sm text-gray-500 editor-content" contenteditable="true">
+                            Customer Role
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            testimonialList.appendChild(newTestimonial);
+            showToast('Testimonial added');
+        });
+
+        // Helper function to show toast messages
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Save content to localStorage (for GitHub Pages demo)
+        function saveToLocalStorage() {
+            const editableElements = document.querySelectorAll('[contenteditable="true"]');
+            const contentData = {};
+            
+            editableElements.forEach(el => {
+                if (el.id) {
+                    contentData[el.id] = el.innerHTML;
+                }
+            });
+            
+            localStorage.setItem('ganjoyContent', JSON.stringify(contentData));
+            showToast('Changes saved locally');
+        }
+
+        // Load content from localStorage (for GitHub Pages demo)
+        function loadFromLocalStorage() {
+            const savedContent = localStorage.getItem('ganjoyContent');
+            if (savedContent) {
+                const contentData = JSON.parse(savedContent);
+                
+                for (const [id, content] of Object.entries(contentData)) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.innerHTML = content;
+                    }
+                }
+            }
+        }
+
+        // Initialize the editor
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            
+            // Auto-save when content changes
+            document.addEventListener('input', function(e) {
+                if (e.target.hasAttribute('contenteditable')) {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    document.getElementById('last-saved').textContent = `${timeString} (unsaved changes)`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
